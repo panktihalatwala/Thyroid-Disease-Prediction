@@ -1,0 +1,16 @@
+Feature,Mean_Abs_SHAP
+TSH,1.5400978
+T3,1.449023
+TT4,1.1951603
+FTI,0.89898425
+T4U,0.6095068
+age,0.29586568
+T3_measured,0.2784725
+referral_source_other,0.23041518
+TT4_measured,0.19721502
+sex,0.1612108
+on_thyroxine,0.10381192
+TSH_measured,0.102771215
+referral_source_SVHC,0.04172158
+referral_source_SVI,0.037084002
+pregnant,0.03307257
