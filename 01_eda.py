@@ -1,69 +1,69 @@
 """
-STEP 1: Exploratory Data Analysis (EDA)
-Run this FIRST, before writing any preprocessing code.
-Purpose: understand columns, missing values, class balance.
-
-HOW TO USE:
-This uses the official `ucimlrepo` package to pull the UCI Thyroid Disease
-dataset (id=102) directly - no manual file download needed.
-Just run: pip install ucimlrepo   (already in requirements.txt)
-Then:     python 01_eda.py
-It will also save a local copy to data/thyroid_raw.csv so you're not
-re-downloading it every time.
+STEP 1b: Exploratory Data Analysis (EDA)
+Loads data/thyroid_raw.csv (created by 01_load_data.py) and produces
+summary stats and plots saved into the eda_outputs/ folder.
 """
 
 import pandas as pd
-from ucimlrepo import fetch_ucirepo
+import numpy as np
+import matplotlib
+matplotlib.use("Agg")  # so it saves files instead of trying to pop up a window
+import matplotlib.pyplot as plt
+import seaborn as sns
+import os
 
-pd.set_option("display.max_columns", None)
-pd.set_option("display.width", 200)
+DATA_PATH = "data/thyroid_raw.csv"
+OUT_DIR = "eda_outputs"
+os.makedirs(OUT_DIR, exist_ok=True)
 
-thyroid = fetch_ucirepo(id=102)
-X_raw = thyroid.data.features
-y_raw = thyroid.data.targets
+df = pd.read_csv(DATA_PATH)
 
-df = pd.concat([X_raw, y_raw], axis=1)
-df.to_csv("data/thyroid_raw.csv", index=False)
-print("Saved a local copy to data/thyroid_raw.csv\n")
+print("Shape:", df.shape)
+print("\nColumn dtypes:\n", df.dtypes)
 
-print("METADATA:")
-print(thyroid.metadata.get("abstract", ""))
-print("\nVARIABLE INFO:")
-print(thyroid.variables)
+# ---- Basic stats ----
+print("\nDescribe (numeric columns):")
+numeric_cols = ["age", "TSH", "T3", "TT4", "T4U", "FTI"]
+for col in numeric_cols:
+    df[col] = pd.to_numeric(df[col], errors="coerce")
+print(df[numeric_cols].describe())
 
-print("=" * 60)
-print("SHAPE:", df.shape)
-print("=" * 60)
+# ---- Missing values ----
+print("\nMissing values per column:")
+missing = df.isna().sum()
+print(missing[missing > 0])
 
-print("\nCOLUMN NAMES:")
-print(list(df.columns))
+# ---- Target distribution ----
+print("\nTarget distribution:")
+print(df["target"].value_counts())
+print(df["target"].value_counts(normalize=True))
 
-print("\nFIRST 5 ROWS:")
-print(df.head())
+plt.figure(figsize=(5, 4))
+sns.countplot(data=df, x="target")
+plt.title("Target Class Distribution")
+plt.savefig(f"{OUT_DIR}/target_distribution.png", bbox_inches="tight")
+plt.close()
 
-print("\nDATA TYPES:")
-print(df.dtypes)
+# ---- Numeric feature distributions by target ----
+for col in numeric_cols:
+    plt.figure(figsize=(6, 4))
+    sns.histplot(data=df, x=col, hue="target", kde=True, element="step")
+    plt.title(f"{col} distribution by target")
+    plt.savefig(f"{OUT_DIR}/{col}_distribution.png", bbox_inches="tight")
+    plt.close()
 
-print("\nMISSING VALUES (as '?' - common in this dataset):")
-question_mark_counts = (df == "?").sum()
-print(question_mark_counts[question_mark_counts > 0])
+# ---- Correlation heatmap (numeric features only) ----
+plt.figure(figsize=(7, 5))
+sns.heatmap(df[numeric_cols].corr(), annot=True, cmap="coolwarm", fmt=".2f")
+plt.title("Correlation Between Numeric Features")
+plt.savefig(f"{OUT_DIR}/correlation_heatmap.png", bbox_inches="tight")
+plt.close()
 
-print("\nMISSING VALUES (actual NaN, if any):")
-print(df.isna().sum()[df.isna().sum() > 0])
+# ---- Age distribution overall ----
+plt.figure(figsize=(6, 4))
+sns.histplot(df["age"], bins=30, kde=True)
+plt.title("Age Distribution")
+plt.savefig(f"{OUT_DIR}/age_distribution.png", bbox_inches="tight")
+plt.close()
 
-target_col = y_raw.columns[0]
-print(f"\nTarget column: '{target_col}'")
-
-print(f"\nCLASS DISTRIBUTION ('{target_col}'):")
-print(df[target_col].value_counts())
-print("\nClass distribution (%):")
-print(df[target_col].value_counts(normalize=True) * 100)
-
-print("\nNUMERIC COLUMN SUMMARY (may need cleaning first if stored as text):")
-print(df.describe(include="all").T)
-
-print("\n" + "=" * 60)
-print("NEXT STEP: note down the exact target column name and which")
-print("columns are mostly missing (candidates to drop, e.g. TBG).")
-print("Then move to 02_preprocessing.py")
-print("=" * 60)
+print(f"\nDone. Plots saved in {OUT_DIR}/")
