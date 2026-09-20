@@ -1,0 +1,4 @@
+hyperthyroid
+hypothyroid
+negative
+other
